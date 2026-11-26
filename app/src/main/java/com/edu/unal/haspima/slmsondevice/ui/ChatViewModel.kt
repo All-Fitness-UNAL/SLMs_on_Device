@@ -7,6 +7,7 @@ import android.net.NetworkCapabilities
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.edu.unal.haspima.slmsondevice.R
 import com.edu.unal.haspima.slmsondevice.data.InferenceSettings
 import com.edu.unal.haspima.slmsondevice.data.ModelInfo
 import com.edu.unal.haspima.slmsondevice.data.ModelRepository
@@ -110,11 +111,11 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
                 throw e
             } catch (e: OutOfMemoryError) {
                 llm.close()
-                fail("Memoria insuficiente para este modelo. Pruebe uno más pequeño.")
+                fail(getApplication<Application>().getString(R.string.notice_oom))
             } catch (t: Throwable) {
                 llm.close()
-                fail("No se pudo cargar ${file.name}: ${t.message ?: t.javaClass.simpleName}. " +
-                        "¿Archivo corrupto o incompatible?")
+                val errDetails = t.message ?: t.javaClass.simpleName
+                fail(getApplication<Application>().getString(R.string.notice_load_error, file.name, errDetails))
             }
         }
     }
@@ -136,11 +137,11 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
                 repository.download(model, _state.value.settings.hfToken).collect { p ->
                     _state.update { it.copy(transfers = it.transfers + (model.id to p)) }
                 }
-                _state.update { it.copy(notice = "${model.displayName} descargado") }
+                _state.update { it.copy(notice = getApplication<Application>().getString(R.string.notice_downloaded, model.displayName)) }
             } catch (e: CancellationException) {
-                _state.update { it.copy(notice = "Descarga pausada (se puede reanudar)") }
+                _state.update { it.copy(notice = getApplication<Application>().getString(R.string.notice_download_paused)) }
             } catch (t: Throwable) {
-                _state.update { it.copy(notice = t.message ?: "Error de descarga") }
+                _state.update { it.copy(notice = t.message ?: getApplication<Application>().getString(R.string.notice_download_error)) }
             } finally {
                 _state.update { it.copy(transfers = it.transfers - model.id) }
                 refreshFiles()
@@ -156,11 +157,11 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
         transferJobs[key] = viewModelScope.launch {
             try {
                 repository.import(uri).collect { p -> _state.update { it.copy(transfers = it.transfers + (key to p)) } }
-                _state.update { it.copy(notice = "Modelo importado") }
+                _state.update { it.copy(notice = getApplication<Application>().getString(R.string.notice_imported)) }
             } catch (e: CancellationException) {
                 throw e
             } catch (t: Throwable) {
-                _state.update { it.copy(notice = "Importación fallida: ${t.message}") }
+                _state.update { it.copy(notice = getApplication<Application>().getString(R.string.notice_import_failed, t.message ?: "")) }
             } finally {
                 _state.update { it.copy(transfers = it.transfers - key) }
                 refreshFiles()
@@ -249,7 +250,7 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             generationJob?.join()
             runCatching { llm.resetConversation(_state.value.settings) }
-                .onFailure { e -> _state.update { it.copy(notice = "Error: ${e.message}") } }
+                .onFailure { e -> _state.update { it.copy(notice = getApplication<Application>().getString(R.string.notice_generic_error, e.message ?: "")) } }
             _state.update { it.copy(messages = emptyList()) }
         }
     }
