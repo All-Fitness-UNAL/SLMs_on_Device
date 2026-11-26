@@ -5,34 +5,58 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -42,19 +66,35 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.edu.unal.haspima.slmsondevice.llm.GenerationMetrics
 import java.util.Locale
 
-/** Pantalla de chat con streaming token a token y métricas por respuesta. */
+/**
+ * Pantalla principal de chat con inferencia de SLMs on-device.
+ * Ofrece la experiencia central de la app, con menú desplegable para acceder a Modelos y Ajustes.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ChatScreen(vm: ChatViewModel, state: UiState, onGoToModels: () -> Unit, modifier: Modifier = Modifier) {
+fun ChatScreen(
+    vm: ChatViewModel,
+    state: UiState,
+    onNavigateToModels: () -> Unit,
+    onNavigateToSettings: () -> Unit,
+    modifier: Modifier = Modifier,
+    paddingValues: PaddingValues = PaddingValues(),
+) {
     var input by rememberSaveable { mutableStateOf("") }
     val listState = rememberLazyListState()
     val ready = state.model as? ModelState.Ready
+    var menuExpanded by remember { mutableStateOf(false) }
 
     // Mantener visible el final mientras llega el streaming.
     val lastLen = state.messages.lastOrNull()?.text?.length ?: 0
@@ -62,117 +102,388 @@ fun ChatScreen(vm: ChatViewModel, state: UiState, onGoToModels: () -> Unit, modi
         if (state.messages.isNotEmpty()) listState.scrollToItem(state.messages.lastIndex)
     }
 
-    Column(modifier.fillMaxSize().imePadding()) {
-        Header(state, onNewChat = vm::newConversation)
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(paddingValues)
+            .imePadding()
+    ) {
+        // Barra superior con menú oculto (menu group) para Modelos y Ajustes
+        TopAppBar(
+            title = {
+                Column {
+                    Text(
+                        text = ready?.file?.nameWithoutExtension ?: "SLMs on Device",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    if (ready != null) {
+                        Text(
+                            text = "${ready.result.backend} · Carga: ${ready.result.loadMs} ms",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    } else {
+                        Text(
+                            text = "Inferencia local 100 % en el dispositivo",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            },
+            actions = {
+                OfflineChip(online = state.online)
+                IconButton(onClick = vm::newConversation, enabled = ready != null) {
+                    Icon(Icons.Default.Add, contentDescription = "Nueva conversación")
+                }
+                Box {
+                    IconButton(onClick = { menuExpanded = true }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "Menú de opciones")
+                    }
+                    DropdownMenu(
+                        expanded = menuExpanded,
+                        onDismissRequest = { menuExpanded = false },
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Modelos") },
+                            leadingIcon = { Icon(Icons.Default.Build, contentDescription = null) },
+                            onClick = {
+                                menuExpanded = false
+                                onNavigateToModels()
+                            },
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Ajustes") },
+                            leadingIcon = { Icon(Icons.Default.Settings, contentDescription = null) },
+                            onClick = {
+                                menuExpanded = false
+                                onNavigateToSettings()
+                            },
+                        )
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                        DropdownMenuItem(
+                            text = { Text("Nueva conversación") },
+                            leadingIcon = { Icon(Icons.Default.Refresh, contentDescription = null) },
+                            enabled = ready != null && state.messages.isNotEmpty(),
+                            onClick = {
+                                menuExpanded = false
+                                vm.newConversation()
+                            },
+                        )
+                    }
+                }
+            },
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainer,
+            ),
+        )
 
+        // Banner de estado del modelo
         when (val m = state.model) {
-            is ModelState.Loading -> Column(Modifier.padding(16.dp)) {
-                Text("Cargando ${m.name}…")
-                Text(
-                    "Inicializando LiteRT-LM (pesos + KV-cache). Puede tardar unos segundos.",
-                    style = MaterialTheme.typography.bodySmall,
-                )
-                LinearProgressIndicator(Modifier.fillMaxWidth().padding(top = 8.dp))
+            is ModelState.Loading -> {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+                ) {
+                    Column(Modifier.padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            )
+                            Spacer(Modifier.width(12.dp))
+                            Text(
+                                "Cargando ${m.name}…",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            )
+                        }
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            "Inicializando LiteRT-LM (pesos + KV-cache). Puede tardar unos segundos.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
+                        )
+                        LinearProgressIndicator(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 10.dp),
+                        )
+                    }
+                }
             }
-            is ModelState.Failed -> Banner(m.message, "Ver modelos", onGoToModels, error = true)
-            ModelState.None -> Banner("No hay un modelo cargado.", "Ir a Modelos", onGoToModels)
+            is ModelState.Failed -> Banner(
+                text = m.message,
+                action = "Ver modelos",
+                onAction = onNavigateToModels,
+                error = true,
+            )
+            ModelState.None -> Banner(
+                text = "No hay un modelo cargado en memoria.",
+                action = "Seleccionar Modelo",
+                onAction = onNavigateToModels,
+            )
             is ModelState.Ready -> Unit
         }
 
-        LazyColumn(
-            state = listState,
-            modifier = Modifier.weight(1f).fillMaxWidth(),
-            contentPadding = PaddingValues(12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
+        // Lista de mensajes o pantalla de inicio
+        Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
             if (state.messages.isEmpty() && ready != null) {
-                item {
-                    Text(
-                        "Escriba un mensaje. Pruebe activar el modo avión: la respuesta se genera igual, " +
-                                "porque el modelo corre en este teléfono.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(8.dp),
-                    )
-                }
-            }
-            items(state.messages, key = { it.id }) { MessageBubble(it) }
-        }
-
-        Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            OutlinedTextField(
-                value = input,
-                onValueChange = { input = it },
-                modifier = Modifier.weight(1f),
-                placeholder = { Text(if (ready != null) "Mensaje…" else "Cargue un modelo primero") },
-                enabled = ready != null,
-                maxLines = 5,
-            )
-            if (state.generating) {
-                FilledIconButton(
-                    onClick = vm::stop,
-                    colors = IconButtonDefaults.filledIconButtonColors(containerColor = MaterialTheme.colorScheme.error),
-                ) { Icon(Icons.Filled.Close, contentDescription = "Detener") }
-            } else {
-                FilledIconButton(
-                    onClick = { vm.send(input); input = "" },
-                    enabled = ready != null && input.isNotBlank(),
-                ) { Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Enviar") }
-            }
-        }
-    }
-}
-
-@Composable
-private fun Header(state: UiState, onNewChat: () -> Unit) {
-    val ready = state.model as? ModelState.Ready
-    Surface(color = MaterialTheme.colorScheme.surfaceContainer) {
-        Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text(
-                    ready?.file?.nameWithoutExtension ?: "SLM on Device",
-                    style = MaterialTheme.typography.titleMedium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                HeroEmptyState(
+                    modelName = ready.file.nameWithoutExtension,
+                    onSelectPrompt = { prompt ->
+                        input = prompt
+                        vm.send(prompt)
+                        input = ""
+                    },
                 )
-                if (ready != null) {
-                    Text(
-                        "Backend ${ready.result.backend} · carga ${ready.result.loadMs} ms",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+            } else if (state.messages.isEmpty() && ready == null && state.model !is ModelState.Loading) {
+                HeroNoModelLoadedState(onGoToModels = onNavigateToModels)
+            } else {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    items(state.messages, key = { it.id }) { msg ->
+                        MessageBubble(msg)
+                    }
                 }
             }
-            OfflineChip(state.online)
-            IconButton(onClick = onNewChat, enabled = ready != null) {
-                Icon(Icons.Filled.Refresh, contentDescription = "Nueva conversación")
+        }
+
+        // Barra inferior de entrada de texto
+        Surface(
+            tonalElevation = 2.dp,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                OutlinedTextField(
+                    value = input,
+                    onValueChange = { input = it },
+                    modifier = Modifier.weight(1f),
+                    placeholder = {
+                        Text(if (ready != null) "Escriba un mensaje…" else "Cargue un modelo para chatear")
+                    },
+                    enabled = ready != null,
+                    maxLines = 5,
+                    shape = RoundedCornerShape(24.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                    ),
+                )
+                Spacer(Modifier.width(8.dp))
+                if (state.generating) {
+                    FilledIconButton(
+                        onClick = vm::stop,
+                        colors = IconButtonDefaults.filledIconButtonColors(
+                            containerColor = MaterialTheme.colorScheme.error,
+                        ),
+                        modifier = Modifier.size(48.dp),
+                    ) {
+                        Icon(Icons.Default.Close, contentDescription = "Detener generación")
+                    }
+                } else {
+                    FilledIconButton(
+                        onClick = {
+                            if (input.isNotBlank()) {
+                                vm.send(input)
+                                input = ""
+                            }
+                        },
+                        enabled = ready != null && input.isNotBlank(),
+                        modifier = Modifier.size(48.dp),
+                    ) {
+                        Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Enviar mensaje")
+                    }
+                }
             }
         }
     }
 }
 
-/** Indicador de red: deja claro que la inferencia no depende de internet. */
+/** Estado inicial cuando hay un modelo cargado pero no hay mensajes. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun HeroEmptyState(
+    modelName: String,
+    onSelectPrompt: (String) -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.primaryContainer,
+            modifier = Modifier.size(72.dp),
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    Icons.Default.Star,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.size(36.dp),
+                )
+            }
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        Text(
+            text = "SLMs on Device",
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+        )
+
+        Spacer(Modifier.height(4.dp))
+
+        Text(
+            text = "Modelo activo: $modelName",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.primary,
+            fontWeight = FontWeight.Medium,
+        )
+
+        Spacer(Modifier.height(8.dp))
+
+        Text(
+            text = "La inferencia se ejecuta 100 % localmente en tu teléfono. " +
+                    "Prueba activar el modo avión; la respuesta seguirá generándose sin conexión.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.widthIn(max = 320.dp),
+        )
+
+        Spacer(Modifier.height(28.dp))
+
+        Text(
+            text = "Sugerencias para empezar:",
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        Spacer(Modifier.height(12.dp))
+
+        val suggestions = listOf(
+            "💡 Explícame qué es un SLM",
+            "✍️ Escribe un poema sobre IA privada",
+            "🚀 5 consejos de optimización en Kotlin",
+            "🧮 Compara cuantización INT4 vs INT8",
+        )
+
+        FlowRow(
+            horizontalArrangement = Arrangement.Center,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            suggestions.forEach { suggestion ->
+                OutlinedCard(
+                    onClick = { onSelectPrompt(suggestion.substringAfter(" ").trim()) },
+                    modifier = Modifier.padding(horizontal = 4.dp),
+                    shape = RoundedCornerShape(16.dp),
+                ) {
+                    Text(
+                        text = suggestion,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** Estado inicial cuando no hay un modelo cargado. */
+@Composable
+private fun HeroNoModelLoadedState(onGoToModels: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.secondaryContainer,
+            modifier = Modifier.size(64.dp),
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    Icons.Default.Build,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                    modifier = Modifier.size(32.dp),
+                )
+            }
+        }
+        Spacer(Modifier.height(16.dp))
+        Text(
+            text = "Sin modelo cargado",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+        )
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = "Selecciona o descarga un modelo LiteRT-LM para comenzar a chatear en tu dispositivo.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(Modifier.height(20.dp))
+        TextButton(
+            onClick = onGoToModels,
+            modifier = Modifier.clip(RoundedCornerShape(20.dp)),
+        ) {
+            Text("Ir a Catálogo de Modelos", fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+/** Indicador de red. */
 @Composable
 private fun OfflineChip(online: Boolean) {
     AssistChip(
         onClick = {},
         label = {
             Text(
-                if (online) "En línea · inferencia local" else "Sin red · 100 % local",
+                text = if (online) "En línea · Inferencia local" else "Sin red · 100% local",
                 style = MaterialTheme.typography.labelSmall,
             )
         },
         leadingIcon = {
             Box(
                 Modifier
-                    .padding(2.dp)
+                    .size(8.dp)
                     .background(
-                        if (online) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.primary,
-                        RoundedCornerShape(50),
+                        color = if (online) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.primary,
+                        shape = CircleShape,
                     )
-                    .padding(4.dp)
             )
         },
+        colors = AssistChipDefaults.assistChipColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        ),
+        border = null,
     )
 }
 
@@ -180,12 +491,28 @@ private fun OfflineChip(online: Boolean) {
 private fun Banner(text: String, action: String, onAction: () -> Unit, error: Boolean = false) {
     Surface(
         color = if (error) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.secondaryContainer,
-        modifier = Modifier.fillMaxWidth().padding(12.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 8.dp),
         shape = RoundedCornerShape(12.dp),
     ) {
-        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(text, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
-            androidx.compose.material3.TextButton(onClick = onAction) { Text(action) }
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = text,
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (error) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSecondaryContainer,
+            )
+            TextButton(onClick = onAction) {
+                Text(
+                    text = action,
+                    fontWeight = FontWeight.Bold,
+                    color = if (error) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSecondaryContainer,
+                )
+            }
         }
     }
 }
@@ -193,29 +520,116 @@ private fun Banner(text: String, action: String, onAction: () -> Unit, error: Bo
 @Composable
 private fun MessageBubble(msg: ChatMessage) {
     val isUser = msg.sender == Sender.USER
-    Box(Modifier.fillMaxWidth(), contentAlignment = if (isUser) Alignment.CenterEnd else Alignment.CenterStart) {
+    val clipboardManager = LocalClipboardManager.current
+
+    Box(
+        modifier = Modifier.fillMaxWidth(),
+        contentAlignment = if (isUser) Alignment.CenterEnd else Alignment.CenterStart,
+    ) {
         Surface(
-            shape = RoundedCornerShape(16.dp),
-            color = if (isUser) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
+            shape = if (isUser) {
+                RoundedCornerShape(20.dp, 20.dp, 4.dp, 20.dp)
+            } else {
+                RoundedCornerShape(4.dp, 20.dp, 20.dp, 20.dp)
+            },
+            color = if (isUser) {
+                MaterialTheme.colorScheme.primaryContainer
+            } else {
+                MaterialTheme.colorScheme.surfaceContainerHigh
+            },
             modifier = Modifier.widthIn(max = 340.dp),
+            tonalElevation = if (isUser) 0.dp else 1.dp,
         ) {
-            Column(Modifier.padding(12.dp)) {
-                if (msg.thought.isNotBlank()) ThoughtSection(msg.thought)
-                when {
-                    msg.text.isEmpty() && msg.streaming -> Row(verticalAlignment = Alignment.CenterVertically) {
-                        CircularProgressIndicator(Modifier.padding(end = 8.dp).size(16.dp), strokeWidth = 2.dp)
-                        Text("Pensando…", style = MaterialTheme.typography.bodySmall)
-                    }
-                    else -> SelectionContainer {
-                        Text(
-                            msg.text + if (msg.streaming) " ▌" else "",
-                            color = if (msg.error) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+            Column(Modifier.padding(14.dp)) {
+                // Cabecera en respuesta del asistente
+                if (!isUser) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 6.dp),
+                    ) {
+                        Icon(
+                            Icons.Default.Star,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(16.dp),
                         )
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            text = "Asistente SLM",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                        Spacer(Modifier.weight(1f))
+                        if (msg.text.isNotEmpty()) {
+                            IconButton(
+                                onClick = { clipboardManager.setText(AnnotatedString(msg.text)) },
+                                modifier = Modifier.size(24.dp),
+                            ) {
+                                Icon(
+                                    Icons.Default.Share,
+                                    contentDescription = "Copiar texto",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(14.dp),
+                                )
+                            }
+                        }
                     }
                 }
-                if (msg.stopped) {
-                    Text("[detenido]", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+                // Sección de Razonamiento / Thinking
+                if (msg.thought.isNotBlank()) {
+                    ThoughtSection(msg.thought)
                 }
+
+                // Contenido del mensaje
+                when {
+                    msg.text.isEmpty() && msg.streaming -> {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(vertical = 4.dp),
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier
+                                    .padding(end = 8.dp)
+                                    .size(16.dp),
+                                strokeWidth = 2.dp,
+                            )
+                            Text(
+                                "Pensando…",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                    else -> {
+                        SelectionContainer {
+                            Text(
+                                text = msg.text + if (msg.streaming) " ▌" else "",
+                                color = if (msg.error) {
+                                    MaterialTheme.colorScheme.error
+                                } else if (isUser) {
+                                    MaterialTheme.colorScheme.onPrimaryContainer
+                                } else {
+                                    MaterialTheme.colorScheme.onSurface
+                                },
+                                style = MaterialTheme.typography.bodyLarge,
+                            )
+                        }
+                    }
+                }
+
+                if (msg.stopped) {
+                    Text(
+                        "[detenido]",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+                }
+
                 msg.metrics?.let { MetricsLine(it) }
             }
         }
@@ -225,46 +639,83 @@ private fun MessageBubble(msg: ChatMessage) {
 @Composable
 private fun ThoughtSection(thought: String) {
     var expanded by remember { mutableStateOf(false) }
-    Text(
-        if (expanded) "▾ Razonamiento" else "▸ Razonamiento (${thought.length} caracteres)",
-        style = MaterialTheme.typography.labelMedium,
-        color = MaterialTheme.colorScheme.secondary,
-        modifier = Modifier.clickable { expanded = !expanded }.padding(bottom = 4.dp),
-    )
-    if (expanded) {
-        Text(
-            thought.trim(),
-            style = MaterialTheme.typography.bodySmall,
-            fontStyle = FontStyle.Italic,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(bottom = 8.dp),
-        )
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        shape = RoundedCornerShape(8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 8.dp),
+    ) {
+        Column(Modifier.padding(8.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { expanded = !expanded },
+            ) {
+                Text(
+                    text = if (expanded) "▾ Ocultar razonamiento" else "▸ Ver razonamiento (${thought.length} caracteres)",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.secondary,
+                )
+            }
+            if (expanded) {
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = thought.trim(),
+                    style = MaterialTheme.typography.bodySmall,
+                    fontStyle = FontStyle.Italic,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
     }
 }
 
-/** Línea de métricas. "≈" indica conteo estimado (4 caracteres ≈ 1 token). */
+/** Línea de métricas por generación. */
 @Composable
 private fun MetricsLine(m: GenerationMetrics) {
     val approx = if (m.exact) "" else "≈"
-    val parts = buildList {
-        add("TTFT ${m.ttftMs} ms")
-        add("$approx${String.format(Locale.US, "%.1f", m.decodeTokensPerSecond)} tok/s")
-        add("$approx${m.decodeTokens} tokens")
-        m.prefillTokens?.let { add("prompt $it tok") }
-        add("total ${String.format(Locale.US, "%.1f", m.totalMs / 1000.0)} s")
-    }
-    Text(
-        parts.joinToString(" · "),
-        style = MaterialTheme.typography.labelSmall,
-        fontWeight = FontWeight.Medium,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(top = 6.dp),
+    HorizontalDivider(
+        modifier = Modifier.padding(vertical = 8.dp),
+        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
     )
-    if (!m.exact) {
-        Text(
-            "≈ estimado: ~4 caracteres por token (el runtime no devolvió conteos).",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+    Column {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(
+                text = "TTFT: ${m.ttftMs} ms",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Medium,
+            )
+            Text(
+                text = "$approx${String.format(Locale.US, "%.1f", m.decodeTokensPerSecond)} tok/s",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = "$approx${m.decodeTokens} tokens",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = "${String.format(Locale.US, "%.1f", m.totalMs / 1000.0)} s",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        if (!m.exact) {
+            Text(
+                text = "≈ estimado (~4 caracteres por token)",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                modifier = Modifier.padding(top = 2.dp),
+            )
+        }
     }
 }
