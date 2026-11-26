@@ -28,7 +28,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -41,9 +40,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.edu.unal.haspima.slmsondevice.R
 import com.edu.unal.haspima.slmsondevice.data.ModelCatalog
 import com.edu.unal.haspima.slmsondevice.data.ModelInfo
 import com.edu.unal.haspima.slmsondevice.data.TransferProgress
@@ -76,11 +77,11 @@ fun ModelsScreen(
     ) {
         TopAppBar(
             title = {
-                Text("Catálogo de Modelos", fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.models_title), fontWeight = FontWeight.Bold)
             },
             navigationIcon = {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver al chat")
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back_to_chat))
                 }
             },
             colors = TopAppBarDefaults.topAppBarColors(
@@ -97,8 +98,7 @@ fun ModelsScreen(
         ) {
             item {
                 Text(
-                    text = "Los modelos se ejecutan 100 % en el dispositivo con LiteRT-LM. " +
-                            "Solo se necesita internet para descargarlos por primera vez.",
+                    text = stringResource(R.string.models_intro),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -110,10 +110,10 @@ fun ModelsScreen(
                     shape = RoundedCornerShape(16.dp),
                 ) {
                     Column(Modifier.padding(16.dp)) {
-                        Text("Importar modelo local (.litertlm)", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                        Text(stringResource(R.string.models_import_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                         Spacer(Modifier.height(4.dp))
                         Text(
-                            text = "Elija un archivo .litertlm descargado externamente o transfiéralo con ADB a:",
+                            text = stringResource(R.string.models_import_desc),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -136,11 +136,11 @@ fun ModelsScreen(
                         Spacer(Modifier.height(12.dp))
                         val importing = state.transfers["import"]
                         if (importing != null) {
-                            ProgressLine("Importando…", importing)
+                            ProgressLine(stringResource(R.string.models_importing), importing)
                         } else {
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Button(onClick = { picker.launch(arrayOf("*/*")) }) { Text("Abrir archivo (.litertlm)") }
-                                TextButton(onClick = vm::refreshFiles) { Text("Actualizar lista") }
+                                Button(onClick = { picker.launch(arrayOf("*/*")) }) { Text(stringResource(R.string.models_btn_open_file)) }
+                                TextButton(onClick = vm::refreshFiles) { Text(stringResource(R.string.models_btn_refresh)) }
                             }
                         }
                     }
@@ -149,7 +149,7 @@ fun ModelsScreen(
 
             item {
                 Text(
-                    text = "Modelos destacados",
+                    text = stringResource(R.string.models_featured_title),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(top = 4.dp),
@@ -176,7 +176,7 @@ fun ModelsScreen(
             if (others.isNotEmpty()) {
                 item {
                     Text(
-                        text = "Otros modelos locales",
+                        text = stringResource(R.string.models_others_title),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(top = 8.dp),
@@ -190,8 +190,8 @@ fun ModelsScreen(
                                 Text(formatBytes(file.length()), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 if (activeFile == file) ActiveLabel()
                             }
-                            TextButton(onClick = { vm.loadModel(file) }, enabled = loadingName == null) { Text("Cargar") }
-                            TextButton(onClick = { toDelete = file }) { Text("Borrar") }
+                            TextButton(onClick = { vm.loadModel(file) }, enabled = loadingName == null) { Text(stringResource(R.string.models_btn_load)) }
+                            TextButton(onClick = { toDelete = file }) { Text(stringResource(R.string.models_btn_delete)) }
                         }
                     }
                 }
@@ -202,10 +202,10 @@ fun ModelsScreen(
     toDelete?.let { file ->
         AlertDialog(
             onDismissRequest = { toDelete = null },
-            title = { Text("¿Borrar modelo?") },
-            text = { Text("${file.name} (${formatBytes(file.length())}) se eliminará del dispositivo.") },
-            confirmButton = { TextButton(onClick = { vm.deleteFile(file); toDelete = null }) { Text("Borrar") } },
-            dismissButton = { TextButton(onClick = { toDelete = null }) { Text("Cancelar") } },
+            title = { Text(stringResource(R.string.models_delete_dialog_title)) },
+            text = { Text(stringResource(R.string.models_delete_dialog_text, file.name, formatBytes(file.length()))) },
+            confirmButton = { TextButton(onClick = { vm.deleteFile(file); toDelete = null }) { Text(stringResource(R.string.models_btn_delete)) } },
+            dismissButton = { TextButton(onClick = { toDelete = null }) { Text(stringResource(R.string.cancel)) } },
         )
     }
 }
@@ -243,45 +243,50 @@ private fun CatalogCard(
             }
             Spacer(Modifier.height(4.dp))
             Text(
-                "${model.params} parámetros · ${model.quantization}",
+                stringResource(R.string.models_card_params, model.params, model.quantization),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
-                "Licencia: ${model.license}" + if (model.gated) " · Requiere token HF" else "",
+                stringResource(R.string.models_card_license, model.license) + if (model.gated) stringResource(R.string.models_gated_tag) else "",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            if (model.notes.isNotEmpty()) {
+            val notesText = model.notesResId?.let { stringResource(it) } ?: model.notes
+            if (notesText.isNotEmpty()) {
                 Spacer(Modifier.height(4.dp))
-                Text(model.notes, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                Text(notesText, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
             }
             if (isActive) ActiveLabel()
             Spacer(Modifier.height(12.dp))
             when {
                 progress != null -> {
-                    ProgressLine("Descargando…", progress)
+                    ProgressLine(stringResource(R.string.models_downloading), progress)
                     Spacer(Modifier.height(6.dp))
-                    TextButton(onClick = onCancel) { Text("Pausar descarga") }
+                    TextButton(onClick = onCancel) { Text(stringResource(R.string.models_btn_pause)) }
                 }
                 downloaded -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(onClick = onLoad, enabled = !isLoading && !isActive) {
-                        Text(if (isLoading) "Cargando…" else if (isActive) "En uso" else "Cargar en memoria")
+                        Text(
+                            if (isLoading) stringResource(R.string.models_btn_loading)
+                            else if (isActive) stringResource(R.string.models_btn_in_use)
+                            else stringResource(R.string.models_btn_load)
+                        )
                     }
-                    OutlinedButton(onClick = onDelete) { Text("Borrar") }
+                    OutlinedButton(onClick = onDelete) { Text(stringResource(R.string.models_btn_delete)) }
                 }
                 else -> {
                     val resume = partialBytes > 0
                     Button(onClick = onDownload, enabled = !model.gated || hasToken) {
                         Text(
-                            if (resume) "Reanudar (${(100 * partialBytes / model.sizeBytes)} %)"
-                            else "Descargar modelo"
+                            if (resume) stringResource(R.string.models_btn_resume, (100 * partialBytes / model.sizeBytes).toInt())
+                            else stringResource(R.string.models_btn_download)
                         )
                     }
                     if (model.gated && !hasToken) {
                         Spacer(Modifier.height(4.dp))
                         Text(
-                            "Configure un token de Hugging Face en Ajustes o importelo manualmente.",
+                            stringResource(R.string.models_gated_warning),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.error,
                         )
@@ -300,7 +305,7 @@ private fun ActiveLabel() {
         modifier = Modifier.padding(top = 8.dp),
     ) {
         Text(
-            "● Cargado en memoria",
+            stringResource(R.string.models_active_label),
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onPrimaryContainer,

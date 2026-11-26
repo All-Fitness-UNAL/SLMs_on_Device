@@ -68,12 +68,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.edu.unal.haspima.slmsondevice.R
 import com.edu.unal.haspima.slmsondevice.llm.GenerationMetrics
 import java.util.Locale
 
@@ -113,7 +115,7 @@ fun ChatScreen(
             title = {
                 Column {
                     Text(
-                        text = ready?.file?.nameWithoutExtension ?: "SLMs on Device",
+                        text = ready?.file?.nameWithoutExtension ?: stringResource(R.string.app_name),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
@@ -121,13 +123,13 @@ fun ChatScreen(
                     )
                     if (ready != null) {
                         Text(
-                            text = "${ready.result.backend} · Carga: ${ready.result.loadMs} ms",
+                            text = stringResource(R.string.chat_header_subtitle_loaded, ready.result.backend, ready.result.loadMs),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     } else {
                         Text(
-                            text = "Inferencia local 100 % en el dispositivo",
+                            text = stringResource(R.string.chat_header_subtitle_default),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -137,18 +139,18 @@ fun ChatScreen(
             actions = {
                 OfflineChip(online = state.online)
                 IconButton(onClick = vm::newConversation, enabled = ready != null) {
-                    Icon(Icons.Default.Add, contentDescription = "Nueva conversación")
+                    Icon(Icons.Default.Add, contentDescription = stringResource(R.string.chat_action_new_chat))
                 }
                 Box {
                     IconButton(onClick = { menuExpanded = true }) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "Menú de opciones")
+                        Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.chat_action_menu))
                     }
                     DropdownMenu(
                         expanded = menuExpanded,
                         onDismissRequest = { menuExpanded = false },
                     ) {
                         DropdownMenuItem(
-                            text = { Text("Modelos") },
+                            text = { Text(stringResource(R.string.chat_menu_models)) },
                             leadingIcon = { Icon(Icons.Default.Build, contentDescription = null) },
                             onClick = {
                                 menuExpanded = false
@@ -156,7 +158,7 @@ fun ChatScreen(
                             },
                         )
                         DropdownMenuItem(
-                            text = { Text("Ajustes") },
+                            text = { Text(stringResource(R.string.chat_menu_settings)) },
                             leadingIcon = { Icon(Icons.Default.Settings, contentDescription = null) },
                             onClick = {
                                 menuExpanded = false
@@ -165,7 +167,7 @@ fun ChatScreen(
                         )
                         HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                         DropdownMenuItem(
-                            text = { Text("Nueva conversación") },
+                            text = { Text(stringResource(R.string.chat_menu_new_chat)) },
                             leadingIcon = { Icon(Icons.Default.Refresh, contentDescription = null) },
                             enabled = ready != null && state.messages.isNotEmpty(),
                             onClick = {
@@ -199,7 +201,7 @@ fun ChatScreen(
                             )
                             Spacer(Modifier.width(12.dp))
                             Text(
-                                "Cargando ${m.name}…",
+                                text = stringResource(R.string.chat_loading_title, m.name),
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -207,7 +209,7 @@ fun ChatScreen(
                         }
                         Spacer(Modifier.height(6.dp))
                         Text(
-                            "Inicializando LiteRT-LM (pesos + KV-cache). Puede tardar unos segundos.",
+                            text = stringResource(R.string.chat_loading_subtitle),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
                         )
@@ -221,13 +223,13 @@ fun ChatScreen(
             }
             is ModelState.Failed -> Banner(
                 text = m.message,
-                action = "Ver modelos",
+                action = stringResource(R.string.chat_banner_view_models),
                 onAction = onNavigateToModels,
                 error = true,
             )
             ModelState.None -> Banner(
-                text = "No hay un modelo cargado en memoria.",
-                action = "Seleccionar Modelo",
+                text = stringResource(R.string.chat_banner_no_model),
+                action = stringResource(R.string.chat_banner_select_model),
                 onAction = onNavigateToModels,
             )
             is ModelState.Ready -> Unit
@@ -276,7 +278,10 @@ fun ChatScreen(
                     onValueChange = { input = it },
                     modifier = Modifier.weight(1f),
                     placeholder = {
-                        Text(if (ready != null) "Escriba un mensaje…" else "Cargue un modelo para chatear")
+                        Text(
+                            if (ready != null) stringResource(R.string.input_placeholder_ready)
+                            else stringResource(R.string.input_placeholder_disabled)
+                        )
                     },
                     enabled = ready != null,
                     maxLines = 5,
@@ -295,7 +300,7 @@ fun ChatScreen(
                         ),
                         modifier = Modifier.size(48.dp),
                     ) {
-                        Icon(Icons.Default.Close, contentDescription = "Detener generación")
+                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.input_cd_stop))
                     }
                 } else {
                     FilledIconButton(
@@ -308,7 +313,7 @@ fun ChatScreen(
                         enabled = ready != null && input.isNotBlank(),
                         modifier = Modifier.size(48.dp),
                     ) {
-                        Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Enviar mensaje")
+                        Icon(Icons.AutoMirrored.Filled.Send, contentDescription = stringResource(R.string.input_cd_send))
                     }
                 }
             }
@@ -348,7 +353,7 @@ private fun HeroEmptyState(
         Spacer(Modifier.height(16.dp))
 
         Text(
-            text = "SLMs on Device",
+            text = stringResource(R.string.app_name),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
         )
@@ -356,7 +361,7 @@ private fun HeroEmptyState(
         Spacer(Modifier.height(4.dp))
 
         Text(
-            text = "Modelo activo: $modelName",
+            text = stringResource(R.string.hero_active_model, modelName),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.primary,
             fontWeight = FontWeight.Medium,
@@ -365,8 +370,7 @@ private fun HeroEmptyState(
         Spacer(Modifier.height(8.dp))
 
         Text(
-            text = "La inferencia se ejecuta 100 % localmente en tu teléfono. " +
-                    "Prueba activar el modo avión; la respuesta seguirá generándose sin conexión.",
+            text = stringResource(R.string.hero_description),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -376,7 +380,7 @@ private fun HeroEmptyState(
         Spacer(Modifier.height(28.dp))
 
         Text(
-            text = "Sugerencias para empezar:",
+            text = stringResource(R.string.hero_suggestions_title),
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -384,10 +388,10 @@ private fun HeroEmptyState(
         Spacer(Modifier.height(12.dp))
 
         val suggestions = listOf(
-            "✍️ Escribe un poema sobre IA privada",
-            "🚀 5 consejos de optimización en Kotlin",
-            "🧮 Compara cuantización INT4 vs INT8",
-            "💡 Explícame qué es un Small Language Model (SLM)",
+            stringResource(R.string.hero_suggestion_1),
+            stringResource(R.string.hero_suggestion_2),
+            stringResource(R.string.hero_suggestion_3),
+            stringResource(R.string.hero_suggestion_4),
         )
 
         FlowRow(
@@ -438,13 +442,13 @@ private fun HeroNoModelLoadedState(onGoToModels: () -> Unit) {
         }
         Spacer(Modifier.height(16.dp))
         Text(
-            text = "Sin modelo cargado",
+            text = stringResource(R.string.hero_no_model_title),
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
         )
         Spacer(Modifier.height(8.dp))
         Text(
-            text = "Selecciona o descarga un modelo LiteRT-LM para comenzar a chatear en tu dispositivo.",
+            text = stringResource(R.string.hero_no_model_desc),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -454,7 +458,7 @@ private fun HeroNoModelLoadedState(onGoToModels: () -> Unit) {
             onClick = onGoToModels,
             modifier = Modifier.clip(RoundedCornerShape(20.dp)),
         ) {
-            Text("Ir a Catálogo de Modelos", fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.hero_no_model_button), fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -466,7 +470,7 @@ private fun OfflineChip(online: Boolean) {
         onClick = {},
         label = {
             Text(
-                text = if (online) "En línea · Inferencia local" else "Sin red · 100% local",
+                text = if (online) stringResource(R.string.chip_online) else stringResource(R.string.chip_offline),
                 style = MaterialTheme.typography.labelSmall,
             )
         },
@@ -557,7 +561,7 @@ private fun MessageBubble(msg: ChatMessage) {
                         )
                         Spacer(Modifier.width(6.dp))
                         Text(
-                            text = "Asistente SLM",
+                            text = stringResource(R.string.assistant_label),
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary,
@@ -570,7 +574,7 @@ private fun MessageBubble(msg: ChatMessage) {
                             ) {
                                 Icon(
                                     Icons.Default.Share,
-                                    contentDescription = "Copiar texto",
+                                    contentDescription = stringResource(R.string.cd_copy_text),
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.size(14.dp),
                                 )
@@ -598,7 +602,7 @@ private fun MessageBubble(msg: ChatMessage) {
                                 strokeWidth = 2.dp,
                             )
                             Text(
-                                "Pensando…",
+                                stringResource(R.string.msg_thinking),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -623,7 +627,7 @@ private fun MessageBubble(msg: ChatMessage) {
 
                 if (msg.stopped) {
                     Text(
-                        "[detenido]",
+                        stringResource(R.string.msg_stopped),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 4.dp),
@@ -654,7 +658,8 @@ private fun ThoughtSection(thought: String) {
                     .clickable { expanded = !expanded },
             ) {
                 Text(
-                    text = if (expanded) "▾ Ocultar razonamiento" else "▸ Ver razonamiento (${thought.length} caracteres)",
+                    text = if (expanded) stringResource(R.string.thought_hide)
+                    else stringResource(R.string.thought_show, thought.length),
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.secondary,
@@ -687,31 +692,31 @@ private fun MetricsLine(m: GenerationMetrics) {
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(
-                text = "TTFT: ${m.ttftMs} ms",
+                text = stringResource(R.string.metrics_ttft, m.ttftMs),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.Medium,
             )
             Text(
-                text = "$approx${String.format(Locale.US, "%.1f", m.decodeTokensPerSecond)} tok/s",
+                text = stringResource(R.string.metrics_tok_sec, approx, m.decodeTokensPerSecond),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.Bold,
             )
             Text(
-                text = "$approx${m.decodeTokens} tokens",
+                text = stringResource(R.string.metrics_tokens, approx, m.decodeTokens),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
-                text = "${String.format(Locale.US, "%.1f", m.totalMs / 1000.0)} s",
+                text = stringResource(R.string.metrics_total_sec, m.totalMs / 1000.0),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         if (!m.exact) {
             Text(
-                text = "≈ estimado (~4 caracteres por token)",
+                text = stringResource(R.string.metrics_approx_disclaimer),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                 modifier = Modifier.padding(top = 2.dp),

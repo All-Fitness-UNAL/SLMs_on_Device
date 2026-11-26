@@ -1,5 +1,7 @@
 package com.edu.unal.haspima.slmsondevice.data
 
+import androidx.annotation.StringRes
+import com.edu.unal.haspima.slmsondevice.R
 import java.util.Locale
 
 /**
@@ -17,6 +19,7 @@ data class ModelInfo(
     val license: String,
     /** true si Hugging Face exige iniciar sesión y aceptar la licencia (token). */
     val gated: Boolean = false,
+    @StringRes val notesResId: Int? = null,
     val notes: String = "",
 )
 
@@ -34,6 +37,7 @@ object ModelCatalog {
             url = "$HF/Qwen3-0.6B/resolve/main/Qwen3-0.6B.litertlm",
             fileName = "Qwen3-0.6B.litertlm",
             license = "Apache 2.0",
+            notesResId = R.string.model_note_qwen3_06b_int8,
             notes = "Recomendado por defecto. Soporta modo razonamiento (thinking).",
         ),
         ModelInfo(
@@ -45,6 +49,7 @@ object ModelCatalog {
             url = "$HF/Qwen3-0.6B/resolve/main/Qwen3-0.6B_dynamic_wi4b32_afp32.litertlm",
             fileName = "Qwen3-0.6B_dynamic_wi4b32_afp32.litertlm",
             license = "Apache 2.0",
+            notesResId = R.string.model_note_qwen3_06b_int4,
             notes = "Más pequeño; útil para comparar cuantización INT8 vs INT4. GPU requiere LiteRT-LM ≥ 0.19.",
         ),
         ModelInfo(
@@ -56,6 +61,7 @@ object ModelCatalog {
             url = "$HF/Qwen2.5-1.5B-Instruct/resolve/main/Qwen2.5-1.5B-Instruct_multi-prefill-seq_q8_ekv4096.litertlm",
             fileName = "Qwen2.5-1.5B-Instruct_multi-prefill-seq_q8_ekv4096.litertlm",
             license = "Apache 2.0",
+            notesResId = R.string.model_note_qwen25_15b,
             notes = "Mejor calidad, más lento. Requiere ≥ 6 GB de RAM.",
         ),
         ModelInfo(
@@ -68,6 +74,7 @@ object ModelCatalog {
             fileName = "gemma3-1b-it-int4.litertlm",
             license = "Gemma Terms of Use",
             gated = true,
+            notesResId = R.string.model_note_gemma3_1b,
             notes = "Repositorio restringido: acepte la licencia en Hugging Face y use un token, o importe el archivo.",
         ),
     )

@@ -1,0 +1,119 @@
+<resources>
+    <string name="app_name">SLMs on Device</string>
+
+    <!-- General / Navegación -->
+    <string name="back_to_chat">Volver al chat</string>
+    <string name="cancel">Cancelar</string>
+    <string name="delete">Borrar</string>
+
+    <!-- Cabecera y Menú del Chat -->
+    <string name="chat_header_subtitle_loaded">Backend %1$s · Carga: %2$d ms</string>
+    <string name="chat_header_subtitle_default">Inferencia local 100 % en el dispositivo</string>
+    <string name="chat_action_new_chat">Nueva conversación</string>
+    <string name="chat_action_menu">Menú de opciones</string>
+    <string name="chat_menu_models">Modelos</string>
+    <string name="chat_menu_settings">Ajustes</string>
+    <string name="chat_menu_new_chat">Nueva conversación</string>
+
+    <!-- Banners de Estado del Modelo -->
+    <string name="chat_loading_title">Cargando %1$s…</string>
+    <string name="chat_loading_subtitle">Inicializando LiteRT-LM (pesos + KV-cache). Puede tardar unos segundos.</string>
+    <string name="chat_banner_view_models">Ver modelos</string>
+    <string name="chat_banner_no_model">No hay un modelo cargado en memoria.</string>
+    <string name="chat_banner_select_model">Seleccionar Modelo</string>
+
+    <!-- Pantalla de Inicio / Hero -->
+    <string name="hero_active_model">Modelo activo: %1$s</string>
+    <string name="hero_description">La inferencia se ejecuta 100 % localmente en tu teléfono. Prueba activar el modo avión; la respuesta seguirá generándose sin conexión.</string>
+    <string name="hero_suggestions_title">Sugerencias para empezar:</string>
+    <string name="hero_suggestion_1">✍️ Escribe un poema sobre IA privada</string>
+    <string name="hero_suggestion_2">🚀 5 consejos de optimización en Kotlin</string>
+    <string name="hero_suggestion_3">🧮 Compara cuantización INT4 vs INT8</string>
+    <string name="hero_suggestion_4">💡 Explícame qué es un Small Language Model (SLM)</string>
+    <string name="hero_no_model_title">Sin modelo cargado</string>
+    <string name="hero_no_model_desc">Selecciona o descarga un modelo LiteRT-LM para comenzar a chatear en tu dispositivo.</string>
+    <string name="hero_no_model_button">Ir a Catálogo de Modelos</string>
+
+    <!-- Chip de Red y Barra de Entrada -->
+    <string name="chip_online">En línea · Inferencia local</string>
+    <string name="chip_offline">Sin red · 100% local</string>
+    <string name="input_placeholder_ready">Escriba un mensaje…</string>
+    <string name="input_placeholder_disabled">Cargue un modelo para chatear</string>
+    <string name="input_cd_stop">Detener generación</string>
+    <string name="input_cd_send">Enviar mensaje</string>
+
+    <!-- Mensajes y Métricas -->
+    <string name="assistant_label">Asistente SLM</string>
+    <string name="cd_copy_text">Copiar texto</string>
+    <string name="msg_thinking">Pensando…</string>
+    <string name="msg_stopped">[detenido]</string>
+    <string name="thought_show">▸ Ver razonamiento (%1$d caracteres)</string>
+    <string name="thought_hide">▾ Ocultar razonamiento</string>
+    <string name="metrics_ttft">TTFT: %1$d ms</string>
+    <string name="metrics_tok_sec">%1$s%2$.1f tok/s</string>
+    <string name="metrics_tokens">%1$s%2$d tokens</string>
+    <string name="metrics_total_sec">%1$.1f s</string>
+    <string name="metrics_approx_disclaimer">≈ estimado (~4 caracteres por token)</string>
+
+    <!-- Pantalla de Modelos -->
+    <string name="models_title">Catálogo de Modelos</string>
+    <string name="models_intro">Los modelos se ejecutan 100 % en el dispositivo con LiteRT-LM. Solo se necesita internet para descargarlos por primera vez.</string>
+    <string name="models_import_title">Importar modelo local (.litertlm)</string>
+    <string name="models_import_desc">Elija un archivo .litertlm descargado externamente o transfiéralo con ADB a:</string>
+    <string name="models_importing">Importando…</string>
+    <string name="models_btn_open_file">Abrir archivo (.litertlm)</string>
+    <string name="models_btn_refresh">Actualizar lista</string>
+    <string name="models_featured_title">Modelos destacados</string>
+    <string name="models_card_params">%1$s parámetros · %2$s</string>
+    <string name="models_card_license">Licencia: %1$s</string>
+    <string name="models_gated_tag"> · Requiere token HF</string>
+    <string name="models_active_label">● Cargado en memoria</string>
+    <string name="models_downloading">Descargando…</string>
+    <string name="models_btn_pause">Pausar descarga</string>
+    <string name="models_btn_loading">Cargando…</string>
+    <string name="models_btn_in_use">En uso</string>
+    <string name="models_btn_load">Cargar en memoria</string>
+    <string name="models_btn_delete">Borrar</string>
+    <string name="models_btn_download">Descargar modelo</string>
+    <string name="models_btn_resume">Reanudar (%1$d %%)</string>
+    <string name="models_gated_warning">Configure un token de Hugging Face en Ajustes o impórtelo manualmente.</string>
+    <string name="models_others_title">Otros modelos locales</string>
+    <string name="models_delete_dialog_title">¿Borrar modelo?</string>
+    <string name="models_delete_dialog_text">%1$s (%2$s) se eliminará del dispositivo.</string>
+
+    <!-- Notas del Catálogo de Modelos -->
+    <string name="model_note_qwen3_06b_int8">Recomendado por defecto. Soporta modo razonamiento (thinking).</string>
+    <string name="model_note_qwen3_06b_int4">Más pequeño; útil para comparar cuantización INT8 vs INT4. GPU requiere LiteRT-LM ≥ 0.19.</string>
+    <string name="model_note_qwen25_15b">Mejor calidad, más lento. Requiere ≥ 6 GB de RAM.</string>
+    <string name="model_note_gemma3_1b">Repositorio restringido: acepte la licencia en Hugging Face y use un token, o importe el archivo.</string>
+
+    <!-- Pantalla de Ajustes -->
+    <string name="settings_title">Ajustes de Inferencia</string>
+    <string name="settings_section_hardware">Hardware y Backend</string>
+    <string name="settings_backend_hint">GPU usa OpenCL si el procesador lo soporta; si falla, la app vuelve a CPU automáticamente. Cambiar el backend recargará el modelo.</string>
+    <string name="settings_section_sampling">Parámetros de Muestreo</string>
+    <string name="settings_label_temperature">Temperatura</string>
+    <string name="settings_label_top_k">Top-K</string>
+    <string name="settings_label_top_p">Top-P</string>
+    <string name="settings_label_max_tokens">Máx. tokens de salida</string>
+    <string name="settings_section_behavior">Comportamiento del Modelo</string>
+    <string name="settings_thinking_title">Modo Razonamiento (Qwen3)</string>
+    <string name="settings_thinking_hint">El modelo piensa antes de responder: mejor calidad, más tokens generados.</string>
+    <string name="settings_label_system_prompt">Prompt de sistema</string>
+    <string name="settings_section_auth">Autenticación</string>
+    <string name="settings_label_hf_token">Token de Hugging Face (opcional)</string>
+    <string name="settings_supporting_hf_token">Requerido para modelos restringidos como Gemma 3. Se guarda localmente.</string>
+    <string name="settings_btn_save">Guardar y aplicar</string>
+    <string name="settings_btn_reset">Restablecer</string>
+    <string name="settings_save_hint">Al guardar se iniciará una conversación nueva con los parámetros elegidos.</string>
+
+    <!-- Mensajes del ViewModel -->
+    <string name="notice_oom">Memoria insuficiente para este modelo. Pruebe uno más pequeño.</string>
+    <string name="notice_load_error">No se pudo cargar %1$s: %2$s. ¿Archivo corrupto o incompatible?</string>
+    <string name="notice_downloaded">%1$s descargado</string>
+    <string name="notice_download_paused">Descarga pausada (se puede reanudar)</string>
+    <string name="notice_download_error">Error de descarga</string>
+    <string name="notice_imported">Modelo importado</string>
+    <string name="notice_import_failed">Importación fallida: %1$s</string>
+    <string name="notice_generic_error">Error: %1$s</string>
+</resources>
