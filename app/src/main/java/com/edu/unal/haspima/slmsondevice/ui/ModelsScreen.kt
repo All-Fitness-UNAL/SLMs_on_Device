@@ -1,5 +1,6 @@
 package com.edu.unal.haspima.slmsondevice.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -61,6 +62,8 @@ fun ModelsScreen(
     modifier: Modifier = Modifier,
     paddingValues: PaddingValues = PaddingValues(),
 ) {
+    BackHandler(onBack = onBack)
+
     var toDelete by remember { mutableStateOf<File?>(null) }
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri?.let(vm::importModel)

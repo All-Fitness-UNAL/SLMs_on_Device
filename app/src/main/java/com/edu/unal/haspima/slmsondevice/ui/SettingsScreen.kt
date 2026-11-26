@@ -1,5 +1,6 @@
 package com.edu.unal.haspima.slmsondevice.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -59,6 +60,8 @@ fun SettingsScreen(
     modifier: Modifier = Modifier,
     paddingValues: PaddingValues = PaddingValues(),
 ) {
+    BackHandler(onBack = onBack)
+
     var draft by remember(current) { mutableStateOf(current) }
 
     Column(
