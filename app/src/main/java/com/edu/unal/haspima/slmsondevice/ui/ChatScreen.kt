@@ -384,10 +384,10 @@ private fun HeroEmptyState(
         Spacer(Modifier.height(12.dp))
 
         val suggestions = listOf(
-            "💡 Explícame qué es un SLM",
             "✍️ Escribe un poema sobre IA privada",
             "🚀 5 consejos de optimización en Kotlin",
             "🧮 Compara cuantización INT4 vs INT8",
+            "💡 Explícame qué es un Small Language Model (SLM)",
         )
 
         FlowRow(
